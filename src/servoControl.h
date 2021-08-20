@@ -28,7 +28,12 @@ SOFTWARE.
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <driver/ledc.h>
-#include <esp_log.h>
+
+// #define SERVO_DEBUG
+#ifdef SERVO_DEBUG
+    #include <esp_log.h>
+#endif
+
 
 class servoControl{
 	protected:
@@ -41,17 +46,20 @@ class servoControl{
     
 	uint16_t _minRotate;
 	bool _isMoving; // サーボが動いているかどうか
+	uint8_t _last_angle;
 	
 	double getDutyByPercentage(double percentage);
 	double getDutyByuS(double uS);
 
 	public:
-	void attach(gpio_num_t pin, unsigned int minuS = 400, unsigned int maxuS = 2600, ledc_channel_t ledcChannel = LEDC_CHANNEL_0, ledc_timer_t ledcTimer = LEDC_TIMER_0 );
+	void attach(gpio_num_t pin, unsigned int minuS = 400, unsigned int maxuS = 2600, ledc_channel_t ledcChannel = LEDC_CHANNEL_0, ledc_timer_t ledcTimer = LEDC_TIMER_0, int16_t initial_degree = -1 );
 	void writeMicroSeconds(unsigned int uS);
 	void write(unsigned int value);
-	void setMinRotate(uint16_t degree) { _minRotate = degree; };
+	void setMinRotateDegree(uint16_t degree) { _minRotate = degree; };
+	void smoothMoveDirect(uint16_t stop_degree, uint16_t millis_for_move, uint16_t min_degree = 1);
 	void smoothMove(uint16_t start_degree, uint16_t stop_degree, uint16_t millis_for_move, uint16_t min_degree = 1);
 	void detach();
 	bool isMoving() { return _isMoving; };
+	uint8_t getLastAngle() { return _last_angle; };
 };
 #endif

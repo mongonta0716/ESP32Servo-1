@@ -24,7 +24,9 @@ SOFTWARE.
 
 #include "servoControl.h"
 
+#ifdef SERVO_DEBUG
 static const char *TAG = "[servoControl]";
+#endif
 
 double servoControl::getDutyByPercentage(double percentage){
 	if (percentage <= 0){
@@ -40,7 +42,7 @@ double servoControl::getDutyByuS(double uS){
 	return getDutyByPercentage(((uS * 100.0)/(1000000/_freqHz)));
 }
 
-void servoControl::attach(gpio_num_t pin, unsigned int minuS, unsigned int maxuS, ledc_channel_t ledcChannel, ledc_timer_t ledcTimer){
+void servoControl::attach(gpio_num_t pin, unsigned int minuS, unsigned int maxuS, ledc_channel_t ledcChannel, ledc_timer_t ledcTimer, int16_t initial_degree){
 	_min = minuS;
 	_max = maxuS;
 	_ledcChannel = ledcChannel;
@@ -63,6 +65,11 @@ void servoControl::attach(gpio_num_t pin, unsigned int minuS, unsigned int maxuS
 	ledc_conf.timer_sel		= ledcTimer;
 	ledc_conf.hpoint        = 0;
 	ledc_channel_config(&ledc_conf);
+    if (initial_degree != -1) {
+        write(initial_degree);
+	} else {
+		_last_angle = 0;
+	}
 }
 
 void servoControl::detach(){
@@ -78,11 +85,24 @@ void servoControl::write(unsigned int value) {
 	// 0 = MinServoAngle ; 180 = Max ServoAngle;
 	int scale = (value - 0) * (_max - _min) / (180 - 0) + _min;
 	writeMicroSeconds(scale);
+	_last_angle = value;
+}
+void servoControl::smoothMoveDirect(uint16_t stop_degree, uint16_t millis_for_move, uint16_t min_degree) {
+	smoothMove(_last_angle, stop_degree, millis_for_move, min_degree);
 }
 
 void servoControl::smoothMove(uint16_t start_degree, uint16_t stop_degree, uint16_t millis_for_move, uint16_t min_degree) {
-	if (start_degree == stop_degree) return;
-	setMinRotate(min_degree);
+#ifdef SERVO_DEBUG
+	ESP_LOGI(TAG, "smoothMove:%d, %d, %d, %d", start_degree, stop_degree, millis_for_move, min_degree);
+
+#endif
+	if (start_degree == stop_degree) {
+#ifdef SERVO_DEBUG
+		ESP_LOGI(TAG, "start_degree = stop_degree");
+#endif
+		return;
+	}
+	setMinRotateDegree(min_degree);
 	int16_t degree_for_move = start_degree - stop_degree;
 	uint16_t move_count = 0;
 	bool clockwise = true;
@@ -96,20 +116,34 @@ void servoControl::smoothMove(uint16_t start_degree, uint16_t stop_degree, uint1
 		clockwise = true;
 	} else {
 		// 最小回転角度以下なら動かない
+#ifdef SERVO_DEBUG
+		ESP_LOGI(TAG, "under minRotate");
+#endif
 		return;
 	}
-
+    _isMoving = true;
 	uint16_t move_interval = millis_for_move / move_count;
+#ifdef SERVO_DEBUG
+		ESP_LOGI(TAG, "move_count: %d:move_interval: %d", move_count, move_interval);
+#endif
+    if (move_interval < 10) {
+		// move_intervalが10msec以下になると動かなくなるので移動時間がずれますが10に固定
+		move_interval = 10;
+#ifdef SERVO_DEBUG
+		ESP_LOGI(TAG, "warning:move_interval too short. Servo slowing down.");
+#endif
+	}
 	uint16_t next_degree = 0;
 	for (int i=0; i<move_count; i++) {
 		if (clockwise) {
-			next_degree = start_degree + (i * min_degree);	
+			next_degree = start_degree + (i * _minRotate);	
 		} else {
-			next_degree = start_degree - (i * min_degree);
+			next_degree = start_degree - (i * _minRotate);
 		}
 
 		write(next_degree);
 		vTaskDelay(move_interval / portTICK_PERIOD_MS);
 	}
+	_isMoving = false;
 }
 

@@ -14,10 +14,16 @@ git clone https://github.com/ShellAddicted/ESP32Servo.git
 ```
 for more details see [examples/](https://github.com/ShellAddicted/ESP32SimpleServo/tree/master/examples)  
 
-# Usage of moveSmooth
+# Usage of smoothMove
+Decide the start and end points, the travel time, and the angle to move (default is 1°) to make the servo move smoothly.
+
+Note that if the time for the servo to move finely is less than 10msec, the operation time will be shifted. (This is a specification of vTaskDelay.)
+
 Specify and use the following four parameters.
 - start degree(0〜180°)
 - stop degree(0〜180°)
 - milliseconds for move
 - minimum degree(default: 1°)
 
+## smoothMoveDirect
+The starting point moves from one previous position.
