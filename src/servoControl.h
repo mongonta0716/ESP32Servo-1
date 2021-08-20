@@ -28,6 +28,7 @@ SOFTWARE.
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <driver/ledc.h>
+#include <esp_log.h>
 
 class servoControl{
 	protected:
@@ -37,14 +38,20 @@ class servoControl{
 	unsigned int _min;
 	unsigned int _max;
 	ledc_timer_bit_t _timerResolution;
+    
+	uint16_t _minRotate;
+	bool _isMoving; // サーボが動いているかどうか
 	
 	double getDutyByPercentage(double percentage);
 	double getDutyByuS(double uS);
 
 	public:
-	void attach(gpio_num_t pin, unsigned int minuS = 400, unsigned int maxuS = 2600, ledc_channel_t ledcChannel = LEDC_CHANNEL_0, ledc_timer_t ledcTimer = LEDC_TIMER_0);
+	void attach(gpio_num_t pin, unsigned int minuS = 400, unsigned int maxuS = 2600, ledc_channel_t ledcChannel = LEDC_CHANNEL_0, ledc_timer_t ledcTimer = LEDC_TIMER_0 );
 	void writeMicroSeconds(unsigned int uS);
 	void write(unsigned int value);
+	void setMinRotate(uint16_t degree) { _minRotate = degree; };
+	void smoothMove(uint16_t start_degree, uint16_t stop_degree, uint16_t millis_for_move, uint16_t min_degree = 1);
 	void detach();
+	bool isMoving() { return _isMoving; };
 };
 #endif

@@ -24,6 +24,8 @@ SOFTWARE.
 
 #include "servoControl.h"
 
+static const char *TAG = "[servoControl]";
+
 double servoControl::getDutyByPercentage(double percentage){
 	if (percentage <= 0){
 		return 0;
@@ -76,5 +78,38 @@ void servoControl::write(unsigned int value) {
 	// 0 = MinServoAngle ; 180 = Max ServoAngle;
 	int scale = (value - 0) * (_max - _min) / (180 - 0) + _min;
 	writeMicroSeconds(scale);
+}
+
+void servoControl::smoothMove(uint16_t start_degree, uint16_t stop_degree, uint16_t millis_for_move, uint16_t min_degree) {
+	if (start_degree == stop_degree) return;
+	setMinRotate(min_degree);
+	int16_t degree_for_move = start_degree - stop_degree;
+	uint16_t move_count = 0;
+	bool clockwise = true;
+    if (degree_for_move > _minRotate) {
+		// 反時計回り
+		move_count = degree_for_move / _minRotate;
+		clockwise = false;
+	} else if (degree_for_move < (_minRotate * -1)) {
+		// 時計回り
+		move_count = abs(degree_for_move) / _minRotate;
+		clockwise = true;
+	} else {
+		// 最小回転角度以下なら動かない
+		return;
+	}
+
+	uint16_t move_interval = millis_for_move / move_count;
+	uint16_t next_degree = 0;
+	for (int i=0; i<move_count; i++) {
+		if (clockwise) {
+			next_degree = start_degree + (i * min_degree);	
+		} else {
+			next_degree = start_degree - (i * min_degree);
+		}
+
+		write(next_degree);
+		vTaskDelay(move_interval / portTICK_PERIOD_MS);
+	}
 }
 
