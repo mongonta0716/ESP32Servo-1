@@ -15,7 +15,7 @@ git clone https://github.com/ShellAddicted/ESP32Servo.git
 for more details see [examples/](https://github.com/ShellAddicted/ESP32SimpleServo/tree/master/examples)  
 
 # Usage of moveSmooth
-
+Specify and use the following four parameters.
 - start degree(0〜180°)
 - stop degree(0〜180°)
 - milliseconds for move
