@@ -65,8 +65,8 @@ void servoControl::attach(gpio_num_t pin, unsigned int minuS, unsigned int maxuS
 	ledc_conf.timer_sel		= ledcTimer;
 	ledc_conf.hpoint        = 0;
 	ledc_channel_config(&ledc_conf);
-    if (initial_degree != -1) {
-        write(initial_degree);
+	if (initial_degree != -1) {
+		write(initial_degree);
 	} else {
 		_last_angle = 0;
 	}
@@ -106,7 +106,7 @@ void servoControl::smoothMove(uint16_t start_degree, uint16_t stop_degree, uint1
 	int16_t degree_for_move = start_degree - stop_degree;
 	uint16_t move_count = 0;
 	bool clockwise = true;
-    if (degree_for_move > _minRotate) {
+	if (degree_for_move > _minRotate) {
 		// 反時計回り
 		move_count = degree_for_move / _minRotate;
 		clockwise = false;
@@ -121,12 +121,12 @@ void servoControl::smoothMove(uint16_t start_degree, uint16_t stop_degree, uint1
 #endif
 		return;
 	}
-    _isMoving = true;
+	_isMoving = true;
 	uint16_t move_interval = millis_for_move / move_count;
 #ifdef SERVO_DEBUG
 		ESP_LOGI(TAG, "move_count: %d:move_interval: %d", move_count, move_interval);
 #endif
-    if (move_interval < 10) {
+	if (move_interval < 10) {
 		// move_intervalが10msec以下になると動かなくなるので移動時間がずれますが10に固定
 		move_interval = 10;
 #ifdef SERVO_DEBUG
